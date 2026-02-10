@@ -1,0 +1,83 @@
+## --- Visual Studio 專用的忽略項目 ---
+
+## 使用者特定檔案 (User-specific files)
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## 專案資料夾與建置輸出 (Build results)
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb][Ii][Nn]/
+[Oo][Bb][Jj]/
+log/
+logs/
+
+## Visual Studio 2015/2017/2019/2022 工作資料夾
+.vs/
+# 如果你希望保留 .vs 裡的特定設定（通常不需要），可以取消註釋下面這行
+# !.vs/config/
+
+## --- .NET / C# 相關 ---
+
+## NuGet 套件目錄 (NuGet Packages)
+*.nupkg
+# 如果你不使用專案內的 packages 資料夾，可以忽略它
+**/packages/*
+# 但保留其中的 .gitignore (如果有)
+!**/packages/build/
+
+## 專案發佈輸出的資料夾 (Publish output)
+publish/
+*.publish.xml
+
+## --- C++ 相關 ---
+*.aps
+*.intermediate.manifest
+*.pch
+*.tlog
+*.lastbuildstate
+*.unsuccessfulbuild
+*.ipch
+*.db
+*.opendb
+*.sdf
+*.VC.db
+*.VC.opendb
+
+## --- 測試與分析 ---
+TestResults/
+*.vshost.exe
+*.vshost.exe.config
+*.vshost.exe.manifest
+*.stackdump
+*.gcda
+*.gcno
+
+## --- 網頁 / 前端 (若有 ASP.NET Core) ---
+.env
+.env.development
+.env.local
+node_modules/
+wwwroot/lib/
+dist/
+
+## --- 作業系統與工具檔案 ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 臨時檔案
+*.tmp
+*.bak
+*.swp
