@@ -21,9 +21,18 @@
     <ClCompile Include="algorithm_main.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
+    <ClCompile Include="Trigonometry.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="algorithm.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="Trigonometry.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
   </ItemGroup>
