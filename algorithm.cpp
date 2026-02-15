@@ -6,7 +6,7 @@
 #include <vector>
 #include <stack>
 #include <utility> // for std::pair 
-#include <cstdint> // for uint64_t
+#include <cstdint> // for uint64_t2.
 #include <unordered_map>
 #include "Trigonometry.h"
 
@@ -98,12 +98,24 @@ Calculator::Token Calculator::scanWord(const std::string& expr, size_t& i, bool&
     // 常數辨識仍對大小寫敏感，但先嘗試原字串，再嘗試大寫（方便輸入 PI, pi, Pi）
     if (tryGetConstant(word, val) || tryGetConstant(lower, val)) {
         expectOp = false;
-        return { TokenType::Number, val, '\0', 0, word };
+        //return { TokenType::Number, val, '\0', 0, word };
+        return { TokenType::Constant, val, '\0', 0, word };
+    }
+    // 3. 重點：分辨是「函數」還是「變數」
+    // 技巧：如果單字長度大於 1 (例如 sin, abs, log)，通常是函數
+    // 如果單字長度只有 1 (例如 x, y, a)，通常是變數
+    if (lower.length() > 1) {
+        expectOp = true;
+        return { TokenType::Function, 0.0, '\0', 4, lower };
+    }
+    else {
+        expectOp = false;
+        return { TokenType::Constant, 0.0, '\0', 0, word }; // 這就是你的變數 x
     }
 
     // 函數：回傳小寫名稱以符合 funcTable 的鍵值（例如 "Sin" -> "sin"）
-    expectOp = true; // 函數如 sin( 後面期待數字
-    return { TokenType::Function, 0.0, '\0', 4, lower };
+    //expectOp = true; // 函數如 sin( 後面期待數字
+    //return { TokenType::Function, 0.0, '\0', 4, lower };
 }
 
 // 符號專家 (處理負號與運算符)
@@ -126,7 +138,12 @@ Calculator::Token Calculator::scanParenthesis(char ch, bool& expectOperand) noex
     }
 }
 
-
+/**
+* @brief getPrecedence 取得運算符的優先級
+ * @param op 運算符字元
+ * @return 優先級數值 (數字為0, + -為1, * /為2, ^ s為3)
+ * @note 括號的優先級特例：在 Shunting Yard 演算法中，括號不直接參與比較，所以給予最低優先級 0
+*/
 int Calculator::getPrecedence(char op) const noexcept {
     if (op == '(' || op == ')') return 0; // 括號權力最低
     if (op == '+' || op == '-') return 1;
@@ -135,13 +152,27 @@ int Calculator::getPrecedence(char op) const noexcept {
     return 0;
 }
 
+/**
+* @brief 中序轉後序的核心函式：實作 Shunting Yard 演算法
+ * @param tokens 已經切好的 Token 清單 (中序)
+ * @return 轉換完成的 Token 清單 (後序)
+ * @note 這裡不處理函數的參數分隔（逗號），因為目前的函數都是一元的
+ * @param tokens 已經切好的 Token 清單 (中序)
+ * 
+ */
+
 std::vector<Calculator::Token> Calculator::shunt(const std::vector<Token>& tokens) noexcept {
     std::vector<Token> output; // 輸出佇列
     std::stack<Token> opStack; // 符號維修站
 
     for (const auto& token : tokens) {
-        if (token.type == TokenType::Number) {
+        //if (token.type == TokenType::Number) {
+        if (token.type == TokenType::Number || token.type == TokenType::Constant) {
             output.push_back(token); // 數字直接通過
+        }
+        // 如果是函數 (abs, sin, negate...) 直接進符號站
+        else if (token.type == TokenType::Function) {
+            opStack.push(token);
         }
         else if (token.symbol == '(') {
             // 規則 1：左括號直接進站
@@ -154,14 +185,24 @@ std::vector<Calculator::Token> Calculator::shunt(const std::vector<Token>& token
                 opStack.pop();
             }
             if (!opStack.empty()) opStack.pop(); // 把左括號從站內丟棄，不進入輸出隊列
-        }
-        else {
-            // 規則 3：普通運算符比較優先級
-          // 注意：要多檢查一項 opStack.top().symbol != '('，確保不會踢走左括號
-            while (!opStack.empty() && opStack.top().symbol != '(' &&
-                opStack.top().precedence >= token.precedence) {
+            // 如果括號前是函數，也要彈出
+            if (!opStack.empty() && opStack.top().type == TokenType::Function) {
                 output.push_back(opStack.top());
                 opStack.pop();
+            }
+        }
+        else {
+            while (!opStack.empty() && opStack.top().symbol != '(') {
+                // --- 修正 2：處理右結合律 (讓 ^ 不會被立刻踢出來) ---
+                bool isRight = isRightAssociative(token.symbol);
+                if ((!isRight && opStack.top().precedence >= token.precedence) ||
+                    (isRight && opStack.top().precedence > token.precedence)) {
+                    output.push_back(opStack.top());
+                    opStack.pop();
+                }
+                else {
+                    break;
+                }
             }
             opStack.push(token); // 自己進站等待
         }
@@ -318,6 +359,18 @@ Calculator::CalcResult Calculator::evaluate(const std::vector<Token>& postfix) n
     for (const auto& token : postfix) {
         if (token.type == TokenType::Number) {
             valStack.push(token.value); // 遇到數字，丟進堆疊
+        }
+        else if (token.type == TokenType::Constant) {
+            // --- 處理動態變數 (Constant) ---
+            double latestVal = 0.0;
+            // 每次計算都現場查表，這會抓到微積分 setVariable 設定的最新 x 值
+            if (tryGetConstant(token.name, latestVal)) {
+                valStack.push(latestVal);
+            }
+            else {
+                // 如果真的查不到，就用 Token 裡面存的舊值 (保險用)
+                valStack.push(token.value);
+            }
         }
         else if (token.type == TokenType::Operator) {
             // 遇到符號，抓出最後兩個數字來運算
@@ -483,6 +536,13 @@ Calculator::CalcResult Calculator::calculate(double a, char op, double b) noexce
 bool Calculator::tryGetConstant(const std::string& name, double& outValue) noexcept {
     using namespace CalcConstants;
 
+    auto itVar = variables.find(name);
+    //variables 未定義
+    if (itVar != variables.end()) {
+        outValue = itVar->second;
+        return true;
+    }
+
     // 建立一個靜態的查表 (只會初始化一次)
     static const std::unordered_map<std::string, double> constTable = {
         // 數學
@@ -515,9 +575,6 @@ bool Calculator::tryGetConstant(const std::string& name, double& outValue) noexc
     }
     return false;
 }
-
-#include <utility>   // for std::pair
-#include <cstdint>   // for uint64_t
 
 // Fast Doubling 演算法
 std::pair<long long, long long> Calculator::fibPair(long long n) {
@@ -561,9 +618,42 @@ std::vector<long long> Calculator::fibonacciSeries(long long n) {
     return seq;
 }
 
+/**setVariable的設計是:
+* 提供一個簡單的介面讓使用者可以在計算機中定義自己的變數（例如 x=5），
+*/
+void Calculator::setVariable(const std::string& name, double value) noexcept {
+    variables[name] = value;
+}
 
+/** @brief void clearVariables() noexcept;
+*   這個函式的設計是提供一個簡單的介面讓使用者可以清除所有已定義的變數，通常在重設計算機或開始新的計算時使用。
+*/
+void Calculator::clearVariables() noexcept {
+    variables.clear();
+}
+/**
+* @brief std::vector<Calculator::Token> parseToPostfix(std::string expression) noexcept;
+   * 負責把輸入字串轉成後序表達式 (RPN)，
+   * executePostfix 負責直接執行已經是後序表達式的 Token 列表。
+   * 這樣的分工讓微積分模組可以先呼叫 parseToPostfix 得到 RPN，
+   * 然後重複呼叫 executePostfix 來計算不同的 x 值，而不需要每次都重新解析輸入字串。
+   */
+// 取得解析後的後序表達式 (RPN)，供微積分重複使用
+std::vector<Calculator::Token> Calculator::parseToPostfix(std::string expression) noexcept {
+    return shunt(tokenize(expression));
+}
 
+/**
+*   executePostfix 的設計是：它接受一個已經是後序表達式的 Token 列表，
+    直接呼叫 evaluate 來計算結果。這樣的設計讓微積分模組可以先呼叫 parseToPostfix 得到 RPN，
+    然後重複呼叫 executePostfix 來計算不同的 x 值，而不需要每次都重新解析輸入字串。
 
+*/
+Calculator::CalcResult Calculator::executePostfix(const std::vector<Token>& postfix) noexcept {
+    CalcResult res = evaluate(postfix);
+    lastStatus = res.status;
+    return res;
+}
 
 
 const char* Calculator::statusToText(Calculator::CalcStatus s) noexcept {

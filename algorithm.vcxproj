@@ -127,11 +127,13 @@
   <ItemGroup>
     <ClCompile Include="algorithm.cpp" />
     <ClCompile Include="algorithm_main.cpp" />
+    <ClCompile Include="Infinitesimalrechnung.cpp" />
     <ClCompile Include="Trigonometry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="algorithm.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="Infinitesimalrechnung.h" />
     <ClInclude Include="Trigonometry.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

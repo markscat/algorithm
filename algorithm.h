@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <functional> // 必須包含，用來儲存函式動作
+#include <unordered_map> 
 #include "Constants.h"
 #include "Trigonometry.h"
 
@@ -46,6 +47,7 @@ public:
 		Constant        //常數 (如 PI, E)
     };
     /**
+	* @brief Token 結構體：用來表示分詞後的基本單位
 	* @param type Token 的類型 (數字、符號、括號)
 	* @param vaule 如果是數字，存數值；否則為 0
 	* @param symbol 如果是符號，存字元；否則為 '\0'
@@ -96,6 +98,20 @@ public:
     std::vector<long long> fibonacciSeries(long long n);
 
 
+    // 取得解析後的後序表達式 (RPN)，供微積分重複使用
+    std::vector<Token> parseToPostfix(std::string expression) noexcept;
+
+    // 直接執行後序表達式 (跳過分詞與重排)
+    CalcResult executePostfix(const std::vector<Token>& postfix) noexcept;
+
+    // 設定變數接口
+    void setVariable(const std::string& name, double value) noexcept;
+
+    // 清除所有變數 (選用，通常在重設計算機時使用)
+    void clearVariables() noexcept;
+
+
+
 private:
     // 階段一：切單字
     std::vector<Token> tokenize(const std::string expr) noexcept;
@@ -128,5 +144,10 @@ private:
     Token scanWord(const std::string& expr, size_t& i, bool& expectOp);
     Token scanOperator(char ch, bool& expectOp);
     Token scanParenthesis(char ch, bool& expectOperand) noexcept;
+
+    std::unordered_map<std::string, double> variables;
+
+
+
 
 };

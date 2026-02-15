@@ -2,6 +2,7 @@
 #include "algorithm.h"
 #include "Trigonometry.h"
 #include "Constants.h"
+#include "Infinitesimalrechnung.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -127,6 +128,8 @@ int main() {
     quickTest("fact(5)", u8"測試5階層(預期:120)");
     quickTest("fact(100)", u8"測試100階層(預期:??)");
 
+    std::cout << u8"\n" << u8"[9. 費氏函數/費氏級數測試]\n";
+
     Calculator fibObj;
     std::cout << u8"fibonacciSeries(10): "; 
     
@@ -150,6 +153,20 @@ int main() {
     
     p = fibObj.fibPair(-10); 
     std::cout << u8"fibPair(-10): F(-10)=" << p.first << ", F(-9)=" << p.second << u8" 費式函數\n";
+
+    std::cout << u8"\n" << u8"[10. 微積分測試\n";
+
+    Calculator engine;
+    Calculus calculus(engine);
+
+    // 1. 測試微分： f(x) = x^2，在 x=3 的微分應該是 2*x = 6
+    auto dRes = calculus.derivative("x ^ 2", 3.0);
+    std::cout << "Derivative of x^2 at x=3: " << dRes.value << "\n";
+
+    // 2. 測試積分： f(x) = sin(x)，從 0 積分到 PI 應該是 2
+    // 注意：記得確認 TrigEngine 是在 Radian 模式，或者輸入 "sin(x * PI / 180)"
+    auto iRes = calculus.integral("sin(x)", 0, 3.1415926535);
+    std::cout << "Integral of sin(x) from 0 to PI: " << iRes.value << "\n";
   
     platform_log(u8"\n========== 測試結束 ==========\n");
 
