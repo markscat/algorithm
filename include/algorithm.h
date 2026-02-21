@@ -14,6 +14,9 @@ using CharList = std::vector<char>;
 
 class Calculator {
 public:
+    //bool isLogging = false; // 由 UI 控制這個開關
+
+
     // 定義錯誤類型，方便 UI 顯示錯誤訊息
     enum class CalcStatus {
         Success = 0,
@@ -33,26 +36,26 @@ public:
 
     // 在 Calculator 類別內定義
     /**
-	* @param Number 類型的 Token，代表數字 (如 10.5)
-	* @param Operator 類型的 Token，代表運算符 (如 +, -, *, /)
-	* @param Parenthesis 類型的 Token，代表括號 (如 (, ) )
-	* @param Function 類型的 Token，代表函數 (如 abs, log, sin)
-	* @param Constant 類型的 Token，代表常數 (如 PI, E)
+    * @param Number 類型的 Token，代表數字 (如 10.5)
+    * @param Operator 類型的 Token，代表運算符 (如 +, -, *, /)
+    * @param Parenthesis 類型的 Token，代表括號 (如 (, ) )
+    * @param Function 類型的 Token，代表函數 (如 abs, log, sin)
+    * @param Constant 類型的 Token，代表常數 (如 PI, E)
     */
     enum class TokenType {
         Number,         // 數字 (如 10.5)
         Operator,       // 運算符 (如 +, -, *, /)
         Parenthesis,    // 括號 (如 (, ) )
-		Function,       // 函數 (如 abs, log, sin)
-		Constant        //常數 (如 PI, E)
+        Function,       // 函數 (如 abs, log, sin)
+        Constant        //常數 (如 PI, E)
     };
     /**
-	* @brief Token 結構體：用來表示分詞後的基本單位
-	* @param type Token 的類型 (數字、符號、括號)
-	* @param vaule 如果是數字，存數值；否則為 0
-	* @param symbol 如果是符號，存字元；否則為 '\0'
-	* @param precedence 優先級：數字為0, + -為1, * /為2, ^ s為3
-	* @param name 如果是單字 (abs, log, sin, PI)，存名稱；否則為空字串
+    * @brief Token 結構體：用來表示分詞後的基本單位
+    * @param type Token 的類型 (數字、符號、括號)
+    * @param vaule 如果是數字，存數值；否則為 0
+    * @param symbol 如果是符號，存字元；否則為 '\0'
+    * @param precedence 優先級：數字為0, + -為1, * /為2, ^ s為3
+    * @param name 如果是單字 (abs, log, sin, PI)，存名稱；否則為空字串
     */
     struct Token {
         TokenType type;
@@ -76,7 +79,7 @@ public:
       * @return 包含結果與狀態的結構體
       */
     CalcResult calculate(double a, char op, double b) noexcept;
-        
+
     /**
       * 靜態工具函式：將列舉轉為文字 (方便 UI 顯示)
       */
@@ -110,7 +113,26 @@ public:
     // 清除所有變數 (選用，通常在重設計算機時使用)
     void clearVariables() noexcept;
 
+    /**@brief startLogging 啟動日誌紀錄功能
+     * 這個函式的設計是提供一個簡單的介面讓使用者可以啟動計算日誌的存檔功能。
+     * 當使用者按下按鈕時，會呼叫這個函式來產生一個新的檔名（例如 "calc_log_20240630_153000.txt"），
+	 * 並開啟一個新的檔案來紀錄後續的每筆計算。每次計算都會把輸入表達式、後序表達式 (RPN) 和結果寫入這個檔案。
+    */
+    void startLogging(); // 使用者按下按鈕：產生檔名，開啟紀錄
 
+    /**@brief stopLogging 停止日誌紀錄功能
+     * 這個函式的設計是提供一個簡單的介面讓使用者可以停止計算日誌的存檔功能。
+     * 當使用者放開按鈕時，會呼叫這個函式來關閉目前開啟的日誌檔案，並將 isLogging 開關設回 false，停止後續的紀錄。
+     * 這樣使用者就可以透過按住按鈕來控制何時開始與停止紀錄計算日誌。
+     * 注意：在實作中，你需要確保在 startLogging 中成功開啟檔案後，才允許 stopLogging 來關閉它，以避免錯誤。
+     * 另外，如果使用者在沒有啟動日誌功能的情況下呼叫 stopLogging，你也應該妥善處理這種情況（例如忽略或顯示警告）。
+	 * 總之，這兩個函式共同提供了一個簡單的機制，讓使用者可以透過按鈕來控制計算日誌的存檔行為。
+    */
+    void stopLogging();  // 使用者放開按鈕：關閉紀錄功能
+
+
+    // 如果外部真的需要「讀取」目前是否在錄製，可以給一個唯讀的 Getter
+    bool getLoggingStatus() const noexcept { return isLogging; }
 
 private:
     // 階段一：切單字
@@ -145,9 +167,12 @@ private:
     Token scanOperator(char ch, bool& expectOp);
     Token scanParenthesis(char ch, bool& expectOperand) noexcept;
 
+	/**
+	* @brief 變數表：用來存放使用者定義的變數名稱與對應的數值 (例如 x=5)，
+    */
     std::unordered_map<std::string, double> variables;
 
-
-
+    std::string currentSessionFile; // 紀錄當前會話的檔名
+    bool isLogging = false; // 由 UI 控制這個開關
 
 };

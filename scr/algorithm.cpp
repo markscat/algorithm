@@ -1,6 +1,4 @@
 ﻿//#include "pch.h"
-
-#include "algorithm.h"
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -8,7 +6,10 @@
 #include <utility> // for std::pair 
 #include <cstdint> // for uint64_t2.
 #include <unordered_map>
-#include "Trigonometry.h"
+
+#include "..\include\algorithm.h"
+#include "..\include\Trigonometry.h"
+#include "..\include\CalcLogger.h"
 
 
 // 為了讓代碼更乾淨，我們在 .cpp 頂部定義一些短名稱
@@ -32,7 +33,6 @@ std::vector<Calculator::Token> Calculator::tokenize(std::string expr) noexcept {
         if (isspace(ch)) continue;
 
         // --- 根據「詞類」派發任務 ---
-
         // A. 如果是數字類 (數字或小數點)
         if (isdigit(ch) || ch == '.') {
             tokens.push_back(scanNumber(expr, i));
@@ -117,7 +117,6 @@ Calculator::Token Calculator::scanWord(const std::string& expr, size_t& i, bool&
     //expectOp = true; // 函數如 sin( 後面期待數字
     //return { TokenType::Function, 0.0, '\0', 4, lower };
 }
-
 // 符號專家 (處理負號與運算符)
 Calculator::Token Calculator::scanOperator(char ch, bool& expectOp) {
     if (ch == '-' && expectOp) {
@@ -207,7 +206,6 @@ std::vector<Calculator::Token> Calculator::shunt(const std::vector<Token>& token
             opStack.push(token); // 自己進站等待
         }
     }
-
     // 最後把維修站裡剩餘的符號全部清空到輸出佇列
     while (!opStack.empty()) {
         output.push_back(opStack.top());
@@ -266,12 +264,10 @@ bool Calculator::tryExecuteFunction(const std::string& name, double x, double& o
           if (v < -1.0 || v > 1.0) s = Status::UnknownError;
           else{r = trig.asin(v); s = Status::Success;    } 
         }},
-
         {"acos", [this](double v, double& r, Status& s) {
            if (v < -1.0 || v > 1.0) s = Status::UnknownError;
            else {r = trig.acos(v); s = Status::Success;}
         }},
-
         {"atan", [this](double v, double& r, Status& s) {
            if (v < -1.0 || v > 1.0) s = Status::UnknownError;
            else{ r = trig.atan(v); s = Status::Success; }
@@ -285,7 +281,6 @@ bool Calculator::tryExecuteFunction(const std::string& name, double x, double& o
                 s = Status::Success;
             }
         }},
-
         {"exp", [](double v, double& r, Status& s) {
             r = std::exp(v);
             s = Status::Success;
@@ -336,8 +331,6 @@ bool Calculator::tryExecuteFunction(const std::string& name, double x, double& o
                 s = Status::Success;
             }
             }},
-
-
         // 以後要加 tan, sqrt, exp... 就在這裡加一行就好！
     };
 
@@ -395,7 +388,6 @@ Calculator::CalcResult Calculator::evaluate(const std::vector<Token>& postfix) n
             double resultVal = 0.0;
             Status resStatus = Status::Success;
 
-
             // 一行搞定：去表裡找這個名字，找到了就執行
             if (tryExecuteFunction(token.name, x, resultVal, resStatus)) {
                 if (resStatus != Status::Success) return { 0.0, resStatus };
@@ -410,15 +402,12 @@ Calculator::CalcResult Calculator::evaluate(const std::vector<Token>& postfix) n
             }
         }
     }
-
     // 最終檢查：算完後，堆疊裡必須「剛好剩下一個」數字
     if (valStack.size() != 1) {
         return { 0.0, CalcStatus::InvalidOperator };
     }
     return { valStack.top(), CalcStatus::Success };
 }
-
-
 
 // --- 總入口：串聯三個階段 ---
 Calculator::CalcResult Calculator::execute(std::string expression) noexcept {
@@ -431,15 +420,19 @@ Calculator::CalcResult Calculator::execute(std::string expression) noexcept {
 
     // 3. 計算
     CalcResult res = evaluate(postfix);
+
+    // 如果正在錄製中，就持續「附加」到同一個檔案
+    if (this->isLogging && !currentSessionFile.empty()) {
+        CalcLogger::writeLog(expression, postfix, res);
+    }
+    
     lastStatus = res.status;
     return res;
 }
 
-
 //把守衛程式寫在函數裡頭,我個人覺得這樣比較容易讀
 Calculator::CalcResult Calculator::calculateSequence(DoubleList nums, CharList ops) noexcept {
     // --- 所有的判斷都進來函數後才做 ---
-
     // 1. 基本安全檢查
     if (nums.empty()) return { 0.0, CalcStatus::Success };
     if (ops.empty())  return { nums[0], CalcStatus::Success };
@@ -449,7 +442,6 @@ Calculator::CalcResult Calculator::calculateSequence(DoubleList nums, CharList o
     }
     // 2. 初始化結果
     CalcResult result = { 0.0, CalcStatus::Success };
-
     // 3. 判斷結合律並直接計算
     // 如果第一個符號是 '^'，就走「右結合」邏輯
     if (ops[0] == '^') {
@@ -468,14 +460,12 @@ Calculator::CalcResult Calculator::calculateSequence(DoubleList nums, CharList o
             if (result.status != CalcStatus::Success) break;
         }
     }
-
     return result;
 }
 
 Calculator::CalcResult Calculator::calculate(double a, char op, double b) noexcept {
     //成員函式 "Calculator::calculate" 不能在其類別之外重新宣告
     CalcResult result = { 0.0, CalcStatus::Success };
-
     switch (op) {
     case '+':
         result.value = a + b;
@@ -516,13 +506,11 @@ Calculator::CalcResult Calculator::calculate(double a, char op, double b) noexce
     case '%': // 整數取餘數 
         result.value = std::fmod(a, b); 
         break;
-
     default:
         result.status = CalcStatus::InvalidOperator;
         result.value = 0.0;
         break;
     }
-
     // 檢查運算結果是否溢位 (太大或太小到電腦無法表示)
     if (std::isinf(result.value)) {
         result.status = CalcStatus::Overflow;
@@ -546,7 +534,7 @@ bool Calculator::tryGetConstant(const std::string& name, double& outValue) noexc
     // 建立一個靜態的查表 (只會初始化一次)
     static const std::unordered_map<std::string, double> constTable = {
         // 數學
-        {"PI", PI}, {"E", E}, {"SQRT2", SQRT2},
+        {"PI", PI}, {"Expr", expr}, {"SQRT2", SQRT2},
 
         // 物理 (Physics)
         {"Planck", Physics::Planck},
@@ -618,26 +606,29 @@ std::vector<long long> Calculator::fibonacciSeries(long long n) {
     return seq;
 }
 
-/**setVariable的設計是:
-* 提供一個簡單的介面讓使用者可以在計算機中定義自己的變數（例如 x=5），
+/**
+ * setVariable的設計是:
+ * 提供一個簡單的介面讓使用者可以在計算機中定義自己的變數（例如 x=5），
 */
 void Calculator::setVariable(const std::string& name, double value) noexcept {
     variables[name] = value;
 }
 
-/** @brief void clearVariables() noexcept;
-*   這個函式的設計是提供一個簡單的介面讓使用者可以清除所有已定義的變數，通常在重設計算機或開始新的計算時使用。
+/**
+ *  @brief void clearVariables() noexcept;
+ *   這個函式的設計是提供一個簡單的介面讓使用者可以清除所有已定義的變數，通常在重設計算機或開始新的計算時使用。
 */
 void Calculator::clearVariables() noexcept {
     variables.clear();
 }
 /**
-* @brief std::vector<Calculator::Token> parseToPostfix(std::string expression) noexcept;
-   * 負責把輸入字串轉成後序表達式 (RPN)，
-   * executePostfix 負責直接執行已經是後序表達式的 Token 列表。
-   * 這樣的分工讓微積分模組可以先呼叫 parseToPostfix 得到 RPN，
-   * 然後重複呼叫 executePostfix 來計算不同的 x 值，而不需要每次都重新解析輸入字串。
-   */
+ * @brief std::vector<Calculator::Token> parseToPostfix(std::string expression) noexcept;
+ * 負責把輸入字串轉成後序表達式 (RPN)，
+ * executePostfix 負責直接執行已經是後序表達式的 Token 列表。
+ * 這樣的分工讓微積分模組可以先呼叫 parseToPostfix 得到 RPN，
+ * 然後重複呼叫 executePostfix 來計算不同的 x 值，而不需要每次都重新解析輸入字串。
+*/
+
 // 取得解析後的後序表達式 (RPN)，供微積分重複使用
 std::vector<Calculator::Token> Calculator::parseToPostfix(std::string expression) noexcept {
     return shunt(tokenize(expression));
@@ -645,16 +636,14 @@ std::vector<Calculator::Token> Calculator::parseToPostfix(std::string expression
 
 /**
 *   executePostfix 的設計是：它接受一個已經是後序表達式的 Token 列表，
-    直接呼叫 evaluate 來計算結果。這樣的設計讓微積分模組可以先呼叫 parseToPostfix 得到 RPN，
-    然後重複呼叫 executePostfix 來計算不同的 x 值，而不需要每次都重新解析輸入字串。
-
+*   直接呼叫 evaluate 來計算結果。這樣的設計讓微積分模組可以先呼叫 parseToPostfix 得到 RPN，
+*   然後重複呼叫 executePostfix 來計算不同的 x 值，而不需要每次都重新解析輸入字串。
 */
 Calculator::CalcResult Calculator::executePostfix(const std::vector<Token>& postfix) noexcept {
     CalcResult res = evaluate(postfix);
     lastStatus = res.status;
     return res;
 }
-
 
 const char* Calculator::statusToText(Calculator::CalcStatus s) noexcept {
     switch (s) {
@@ -665,6 +654,17 @@ const char* Calculator::statusToText(Calculator::CalcStatus s) noexcept {
     case Calculator::CalcStatus::Overflow:        return u8"錯誤：結果不是有限數 (溢位或 NaN)";
     default:                                      return u8"發生未知錯誤";
     }
+}
+
+void Calculator::startLogging() {
+    // 只有在呼叫此函式時，才會正確產生帶有時間戳記的檔名
+    this->currentSessionFile = CalcLogger::generateTimestampFilename();
+    this->isLogging = true;
+}
+
+void Calculator::stopLogging() {
+    this->isLogging = false;
+    this->currentSessionFile = ""; // 清空檔名，結束會話
 }
 
 

@@ -1,9 +1,10 @@
 ﻿#pragma once
 //Constants.h
+
 namespace CalcConstants {
     // 數學常數 (手動定義高精度數值)
     static constexpr double PI = 3.14159265358979323846;
-    static constexpr double E = 2.71828182845904523536;
+    static constexpr double expr = 2.71828182845904523536;
     static constexpr double SQRT2 = 1.41421356237309504880;
 
     // 物理常數 (依據國際標準單位)
@@ -13,6 +14,16 @@ namespace CalcConstants {
         static constexpr double Gravity = 6.67430e-11;    // 萬有引力常數 (N·m²/kg²)
         static constexpr double ElementaryCharge = 1.602176634e-19; // 基本電荷 (C)
 
+    }
+    
+    namespace Electronics{
+        static constexpr double Electric_charge=1.602e-19;  //電子電荷(q)單位：庫倫
+        static constexpr double ElectronMobility=1350;      //電子遷移率(μn),單位cm²/V·s
+        static constexpr double HoldMobility=480;           //電洞遷移率(μn),單位cm²/V·s
+        static constexpr double Botzmann=1.381e-23;         //波茲曼常數(k),單位：J/K
+        static constexpr double Vacuum_dc=8.854e-14;        //真空介電係數(ε0​),單位：F/cm
+        static constexpr double Silicon_dc =1.04e-12;       //矽介電係數(εsi),11.7ε0,單位：F/cm
+        static constexpr double Sio2_dc=3.45e-13;           //氧化層界電係數(εax),3.9ε0,單位：F/cm
     }
 
 

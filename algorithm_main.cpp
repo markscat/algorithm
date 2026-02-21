@@ -1,8 +1,12 @@
 ﻿// algorithm_main.cpp
-#include "algorithm.h"
-#include "Trigonometry.h"
-#include "Constants.h"
-#include "Infinitesimalrechnung.h"
+#include "include\algorithm.h"
+#include "include\Trigonometry.h"
+#include "include\Constants.h"
+#include "include\Infinitesimalrechnung.h"
+#include "include\CalcLogger.h"
+
+//#include "include\"
+
 
 #include <iostream>
 #include <cstdlib>
@@ -10,8 +14,6 @@
 #include <vector>
 #include <iomanip>
 #include <sstream>
-
-
 
 #ifdef _WIN32
 #include <windows.h>
@@ -51,6 +53,23 @@ int main() {
 
     Calculator myCalc;
 
+    // --- 使用者手動啟動 Log 功能 ---
+    std::cout << u8"是否啟動計算日誌存檔？(y/n): ";
+    char choice;
+    std::cin >> choice;
+
+    if (choice == 'y' || choice == 'Y') {
+        myCalc.startLogging();
+        if (myCalc.getLoggingStatus()) {
+            std::cout << u8"日誌功能已啟動，每筆計算將存為獨立檔案。\n";
+            std::cout << "Recording to file..." << std::endl;
+        }
+    }
+
+    // 清除輸入緩衝區，以免影響後續輸入
+    std::cin.ignore((std::numeric_limits<std::streamsize>::max)(), '\n');
+
+        
     // --- 定義 Lambda 輔助測試函數 ---
     auto quickTest = [&](std::string expr, std::string note = u8"") {
         if (!note.empty()) platform_log(u8"註解: " + note + "\n");
@@ -64,17 +83,69 @@ int main() {
     //platform_log(u8"[1. 基礎優先級測試]\n");
     std::cout << u8"\n" << u8"[1. 基礎優先級測試]\n";
 
+
+    // --- 測試計算 ---
+    std::string expr1 = "10 + 5 * 2";
+    std::cout << u8"執行計算: " << expr1 << std::endl;
+    myCalc.execute(expr1);
+
+    std::string expr2 = "sin(PI / 6) ^ 2";
+    std::cout << u8"執行計算: " << expr2 << std::endl;
+    myCalc.execute(expr2);
+
+    myCalc.stopLogging();
+
+    if (myCalc.getLoggingStatus()) {
+        std::cout << u8"延遲五秒,請稍待\n";
+        Sleep(5000); // 停 5000 毫秒 = 5 秒
+        std::cout << u8"\n延遲結束,重新錄製\n";
+    }
+
+	myCalc.startLogging();
+
+    expr1 = "100 / 4 - 5";
+    myCalc.execute(expr1);
+    std::cout << u8"執行計算: " << expr1 << std::endl;
+
+    expr1 = "3 + 2 ^ 3";
+    myCalc.execute(expr1);
+    std::cout << u8"執行計算: " << expr1 << std::endl;
+
+    myCalc.stopLogging();
+
+    std::cout << u8"\n計算完成！請檢查專案目錄下的 .log 檔案。\n";
+	return 0;
+
+    /*
+    std::string expr;
+
+	expr = "10 + 5 * 2";
     quickTest("10 + 5 * 2", u8"預期: 20 (先乘後加)");
+    myCalc.execute(expr);
+
+	expr = "100 / 4 - 5";
     quickTest("100 / 4 - 5", u8"預期: 20 (先除後減)");
+    myCalc.execute(expr);
+
+	expr = "3 + 2 ^ 3";
     quickTest("3 + 2 ^ 3", u8"預期: 11 (次方權限最高)");
+    myCalc.execute(expr);
 
     // 2. 括號處理 (Parentheses)
     //platform_log(u8"\n[2. 括號強制優先測試]\n");
     std::cout << u8"\n" << u8"[2. 括號強制優先測試]\n";
 
+	expr = "(10 + 5) * 2";
     quickTest("(10 + 5) * 2", u8"預期: 30");
+    myCalc.execute(expr);
+
+	expr = "3 + 2 ^ 3 + (5 * 6)";
     quickTest("3 + 2 ^ 3 + (5 * 6)", u8"預期: 41");
+    myCalc.execute(expr);
+
+	expr = "((1 + 2) * 3) ^ 2";
     quickTest("((1 + 2) * 3) ^ 2", u8"預期: 81 (多重括號)");
+    myCalc.execute(expr);
 
     // 3. 結合律測試 (Associativity)
     //platform_log(u8"\n[3. 結合律測試]\n");
@@ -176,4 +247,5 @@ int main() {
     std::cout << "Trig Degree sin(30): " << TrigEngine().sin(30) << "\n";
 
     return 0;
+    */
 }

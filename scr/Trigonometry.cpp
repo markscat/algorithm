@@ -1,9 +1,9 @@
-// Trigonometry.cpp
-#include "Trigonometry.h"
+ï»¿// Trigonometry.cpp
+#include "..\include\Trigonometry.h"
 
 using namespace CalcConstants;
 
-// --- ³æ¦ìÂà´«¹ê§@ ---
+// --- å–®ä½è½‰æ›å¯¦ä½œ ---
 double TrigEngine::degToRad(double deg) { return deg * (PI / 180.0); }
 double TrigEngine::radToDeg(double rad) { return rad * (180.0 / PI); }
 double TrigEngine::degToGrad(double deg) { return deg * (400.0 / 360.0); }
@@ -27,13 +27,13 @@ double TrigEngine::fromRadians(double rad) const {
     }
 }
 
-// --- ¤T¨¤¨ç¼Æ¹ê§@ ---
+// --- ä¸‰è§’å‡½æ•¸å¯¦ä½œ ---
 double TrigEngine::sin(double input) const {
     return std::sin(toRadians(input));
 }
 
 double TrigEngine::cos(double input) const {
-    // ³B²z 90 «×ªº·L¤p»~®t°İÃD (std::cos(PI/2) ¥i¯à¤£ºë·Çµ¥©ó 0)
+    // è™•ç† 90 åº¦çš„å¾®å°èª¤å·®å•é¡Œ (std::cos(PI/2) å¯èƒ½ä¸ç²¾æº–ç­‰æ–¼ 0)
     double res = std::cos(toRadians(input));
     return (std::abs(res) < 1e-15) ? 0.0 : res;
 }
@@ -42,26 +42,26 @@ double TrigEngine::tan(double input) const {
     return std::tan(toRadians(input));
 }
 
-// ¾l¤Á (cot)
+// é¤˜åˆ‡ (cot)
 double TrigEngine::cot(double input) const {
     double val = std::tan(toRadians(input));
-    // ¨¾¤î°£¥H¹s (¨Ò¦p tan(0) = 0)
+    // é˜²æ­¢é™¤ä»¥é›¶ (ä¾‹å¦‚ tan(0) = 0)
     if (std::abs(val) < 1e-15) return INFINITY;
     return 1.0 / val;
 }
 
-// ¥¿³Î (sec)
+// æ­£å‰² (sec)
 double TrigEngine::sec(double input) const {
     double val = std::cos(toRadians(input));
-    // ¨¾¤î°£¥H¹s (¨Ò¦p cos(90) = 0)
+    // é˜²æ­¢é™¤ä»¥é›¶ (ä¾‹å¦‚ cos(90) = 0)
     if (std::abs(val) < 1e-15) return INFINITY;
     return 1.0 / val;
 }
 
-// ¾l³Î (csc)
+// é¤˜å‰² (csc)
 double TrigEngine::csc(double input) const {
     double val = std::sin(toRadians(input));
-    // ¨¾¤î°£¥H¹s (¨Ò¦p sin(0) = 0)
+    // é˜²æ­¢é™¤ä»¥é›¶ (ä¾‹å¦‚ sin(0) = 0)
     if (std::abs(val) < 1e-15) return INFINITY;
     return 1.0 / val;
 }

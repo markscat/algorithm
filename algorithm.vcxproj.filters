@@ -15,30 +15,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="algorithm.cpp">
-      <Filter>來源檔案</Filter>
-    </ClCompile>
     <ClCompile Include="algorithm_main.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
-    <ClCompile Include="Trigonometry.cpp">
+    <ClCompile Include="scr\algorithm.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
-    <ClCompile Include="Infinitesimalrechnung.cpp">
+    <ClCompile Include="scr\CalcLogger.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="scr\Infinitesimalrechnung.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="scr\Trigonometry.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="algorithm.h">
+    <ClInclude Include="include\algorithm.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="Constants.h">
+    <ClInclude Include="include\CalcLogger.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="Trigonometry.h">
+    <ClInclude Include="include\Constants.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="Infinitesimalrechnung.h">
+    <ClInclude Include="include\Infinitesimalrechnung.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Trigonometry.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
   </ItemGroup>

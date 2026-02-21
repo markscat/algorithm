@@ -1,0 +1,11 @@
+root = true
+
+[*]
+# 強制所有檔案使用 UTF-8 編碼
+charset = utf-8-bom
+# 強制使用 Windows 的換行符號 (CRLF)
+end_of_line = crlf
+# 移除行尾多餘空白
+trim_trailing_whitespace = true
+# 檔案末尾留一行空白
+insert_final_newline = true
