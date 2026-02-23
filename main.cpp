@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
             break;
         }
     }
-    Calculator w;
+    CalculatorUI w;
     w.show();
     return a.exec();
 }
