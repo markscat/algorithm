@@ -131,6 +131,12 @@ public:
     void stopLogging();  // 使用者放開按鈕：關閉紀錄功能
 
 
+    // 新增這個函數，讓外部可以設定角度單位
+    void setAngleUnit(TrigEngine::AngleUnit unit) {
+        trig.setUnit(unit);
+    }
+
+
     // 如果外部真的需要「讀取」目前是否在錄製，可以給一個唯讀的 Getter
     bool getLoggingStatus() const noexcept { return isLogging; }
 

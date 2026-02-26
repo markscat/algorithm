@@ -1,5 +1,10 @@
 #include "calculator.h"
 #include "./ui_calculator.h"
+#include "../include/algorithm.h"
+
+#include <QKeyEvent>
+#include <string>
+
 
 
 /*
@@ -89,167 +94,442 @@
     *   **測試點**：輸入 `2+3*4` 按等於，是否出現 `14`？
 
 ---
-
-
-
  *
  */
-
 CalculatorUI::CalculatorUI(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::Calculator)
 {
+    //UI Begin
+
     ui->setupUi(this);
 
+    // --- 1. 暴力修復「消失的單元選擇區」 ---
+    // 這裡解決你說 Layout 不見的問題
+    // 強制讓那個名為 "widget" 的容器使用水平佈局，並把 RadioButton 塞進去
+    if (ui->widget->layout() == nullptr) {
+        QHBoxLayout *unitLayout = new QHBoxLayout(ui->widget);
+        unitLayout->setContentsMargins(5, 0, 5, 0); // 左右留一點邊
+        unitLayout->addWidget(ui->DEG_Radiobuttom);
+        unitLayout->addWidget(ui->RAD_Radiobuttom);
+        unitLayout->addWidget(ui->GRA_Radiobuttom);
+        unitLayout->addWidget(ui->REC_Radiobuttom);
+        ui->widget->setLayout(unitLayout);
+    }
+    ui->widget->setFixedHeight(35); // 強制給它高度，不准消失
 
-    // --- 1. 視窗尺寸與佈局約束 (解決縮成小點的關鍵) ---
-    // 強迫視窗的大小永遠「吸附」在佈局內的元件上
-    // 這樣當面板隱藏時，視窗會自動縮小；面板顯示時，視窗會自動撐開
-    if (this->centralWidget()->layout()) {
-        this->centralWidget()->layout()->setSizeConstraint(QLayout::SetFixedSize);
+    // --- 2. 修正截圖中「中間空一大塊」的問題 ---
+    // 你的 verticalLayout 裡面有 Label, LineEdit, Widget
+    // 我們要分配比例：Label(0), LineEdit(1), Widget(0)
+    ui->verticalLayout->setStretch(0, 0); // Label 固定
+    ui->verticalLayout->setStretch(1, 1); // LineEdit 填滿
+    ui->verticalLayout->setStretch(2, 0); // 單元選擇區固定
+
+    // --- 3. 修正主視窗比例與對齊 ---
+    ui->scientific_panel->setFixedHeight(430);
+    ui->Main_widget->setFixedHeight(430);
+    ui->scientific_panel->setFixedWidth(140);
+    ui->Main_widget->setFixedWidth(300);
+
+
+    // --- 3. 解決「下面被削掉」的問題 ---
+    // 調整外層佈局 (verticalLayout_2) 的邊距
+    ui->verticalLayout_2->setContentsMargins(5, 5, 5, 10);
+    ui->verticalLayout_2->setSpacing(5);
+
+
+    // 強制設定視窗啟動狀態
+    ui->scientific_panel->hide();
+    ui->statusbar->hide();
+    this->setFixedWidth(310);
+
+    // 強制讓 QLineEdit 不要佔用過多高度，把空間讓給下面的按鈕
+    ui->lineEdit->setMaximumHeight(100);
+
+    // 【最重要的一行】自動調整高度，確保最後一排按鈕不會被削掉
+    this->adjustSize();
+    // 強制將視窗高度鎖定在計算出來的完美高度上
+    this->setFixedHeight(this->sizeHint().height());
+
+    // --- 4. 視窗與螢幕初始化 ---
+    ui->lineEdit->setMinimumWidth(0); // 拿掉 486 限制
+    ui->lineEdit->setAlignment(Qt::AlignRight);
+    ui->lineEdit->setText("0");
+    ui->lineEdit->setReadOnly(true);
+    ui->label->setText("DEG Mode");
+
+    // 1. 強放「禁言術」：不准螢幕搶奪鍵盤焦點
+    ui->lineEdit->setFocusPolicy(Qt::NoFocus);
+
+    // 2. 「吸星大法」：強制讓主視窗拿到焦點
+    this->setFocus();
+
+    //UI End
+
+    //Function Begin
+
+    QList<QPushButton*> digitButtons = {
+        ui->Button_0, ui->Button_1, ui->Button_2, ui->Button_3, ui->Button_4,
+        ui->Button_5, ui->Button_6, ui->Button_7, ui->Button_8, ui->Button_9,
+        ui->Dot_Button
+    };
+
+    // 用循環把他們全部連到同一個功能函式
+    for (QPushButton* btn : digitButtons) {
+        if (btn) {
+
+            /*  connect(
+             *   const typename QtPrivate::FunctionPointer<Func1>::Object *sender,
+             *   Func1 signal,
+             *   const typename QtPrivate::ContextTypeForFunctor<Func2>::ContextType *context,
+             *   Func2 &&slot,
+             *   Qt::ConnectionType type = Qt::AutoConnection)
+             */
+            connect(btn, &QPushButton::clicked, this, &CalculatorUI::onDigitClicked);
+        }
+    }
+
+    // 手動連線退格與清除按鈕 (如果你沒在 UI 介面點右鍵連線的話)
+    //connect(ui->Back_Button, &QPushButton::clicked, this, &CalculatorUI::on_Back_Button_clicked);
+    //connect(ui->Clear_Button, &QPushButton::clicked, this, &CalculatorUI::on_Clear_Button_clicked);
+
+
+    // --- 運算符連線 ---
+    QList<QPushButton*> opButtons = {
+        ui->Add_Button, ui->Subtraction_Button,
+        ui->Multiplication_Button, ui->Division_Button
+    };
+
+    for (QPushButton* btn : opButtons) {
+        if (btn) {
+            connect(btn, &QPushButton::clicked, this, &CalculatorUI::onOperatorClicked);
+        }
+    }
+    QList<QPushButton*> sciButtons = {
+        ui->Fun_sin_Button, ui->Fun_Cos_Button, ui->fun_Tan_Button,
+        ui->Fun_exp_Button, ui->Power_of_Button, ui->Fun_FIB_Button,
+        ui->Remainder_Button
+            };
+    for (QPushButton* btn : sciButtons) {
+        connect(btn, &QPushButton::clicked, this, &CalculatorUI::onScientificClicked);
+    }
+
+    // 2. 連線角度單位單選鈕 (名字是根據你之前的 UI XML)
+    connect(ui->DEG_Radiobuttom, &QRadioButton::toggled, this, &CalculatorUI::on_AngleUnit_toggled);
+    connect(ui->RAD_Radiobuttom, &QRadioButton::toggled, this, &CalculatorUI::on_AngleUnit_toggled);
+    connect(ui->GRA_Radiobuttom, &QRadioButton::toggled, this, &CalculatorUI::on_AngleUnit_toggled);
+
+    //鍵盤輸入
+
+
+}
+void CalculatorUI::on_Menu_Button_clicked()
+{
+    bool isVisible = !ui->scientific_panel->isVisible();
+
+    // 先記住目前的高度，避免寬度變動時高度也跟著跳
+    int targetHeight = this->height();
+
+    ui->scientific_panel->setVisible(isVisible);
+
+    if (isVisible) {
+        // 展開寬度：左150 + 右300 + 邊距
+        this->setFixedWidth(465);
+    } else {
+        // 縮回寬度：右300 + 邊距
+        this->setFixedWidth(315);
+    }
+
+    // 確保高度維持不變，不會被削掉
+    this->setFixedHeight(targetHeight);
+}
+
+// 核心：所有數字按鈕點了都會跑進這裡
+void CalculatorUI::onDigitClicked() {
+    // 誰點了我？
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    if (!button) return;
+
+    QString buttonText = button->text();
+    QString currentText = ui->lineEdit->text();
+
+    // 如果螢幕現在是 0，直接換成點擊的數字；除非點的是小數點
+    if (currentText == "0") {
+        if (buttonText == ".") {
+            ui->lineEdit->setText("0.");
+        } else {
+            ui->lineEdit->setText(buttonText);
+        }
+    } else {
+        // 防止出現兩個小數點
+        if (buttonText == "." && currentText.contains(".")) return;
+        ui->lineEdit->setText(currentText + buttonText);
+    }
+}
+
+// 清除鍵：直接回歸原始
+void CalculatorUI::on_Clear_Button_clicked() {
+    ui->lineEdit->setText("0");
+    ui->label->setText("Ready"); // 隨便寫個狀態
+}
+
+// 退格鍵：砍掉最後一個字
+void CalculatorUI::on_Back_Button_clicked() {
+    QString text = ui->lineEdit->text();
+    if (text == "0") return;
+
+    text.chop(1); // 刪掉最後一個字元
+
+    // 如果刪完變空的，或是只剩一個負號，就填 0
+    if (text.isEmpty() || text == "-") {
+        text = "0";
+    }
+    ui->lineEdit->setText(text);
+}
+
+
+void CalculatorUI::keyPressEvent(QKeyEvent *event)
+{
+    // 取得按下的按鍵代碼
+    int key = event->key();
+
+    // 1. 處理數字鍵與小數點 (支援主鍵盤與數字小鍵盤)
+    if (key >= Qt::Key_0 && key <= Qt::Key_9) {
+        // 算出對應的按鈕。例如按下 Key_5，就去找 Button_5
+        QString btnName = QString("Button_%1").arg(key - Qt::Key_0);
+        QPushButton* btn = this->findChild<QPushButton*>(btnName);
+        if (btn) btn->animateClick();
+    }
+    else if (key == Qt::Key_Period) {
+        ui->Dot_Button->animateClick();
+    }
+
+    // 2. 處理倒退鍵 (Backspace)
+    else if (key == Qt::Key_Backspace) {
+        ui->Back_Button->animateClick();
+    }
+
+    // 3. 處理清除鍵 (ESC) - 依照您的要求連結到 ESC
+    else if (key == Qt::Key_Escape) {
+        ui->Clear_Button->animateClick();
+    }
+
+    // 4. 處理運算子
+    else if (key == Qt::Key_Plus)      ui->Add_Button->animateClick();
+    else if (key == Qt::Key_Minus)     ui->Subtraction_Button->animateClick();
+    else if (key == Qt::Key_Asterisk)  ui->Multiplication_Button->animateClick(); // 鍵盤的 *
+    else if (key == Qt::Key_Slash)     ui->Division_Button->animateClick();       // 鍵盤的 /
+
+    // 5. 處理等於 (Enter 或 Return)
+    else if (key == Qt::Key_Enter || key == Qt::Key_Return) {
+        ui->equal_Button->animateClick();
+    }
+
+    // 如果是其他沒處理的鍵，丟回給父類別處理，不要吃掉它
+    else {
+        QMainWindow::keyPressEvent(event);
+    }
+}
+
+void CalculatorUI::onOperatorClicked() {
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    if (!button) return;
+
+    QString op = button->text();
+    QString currentText = ui->lineEdit->text();
+
+    //如果螢幕是 0 且按了負號，當作負數開頭
+    if (currentText == "0" && op == "-") {
+        ui->lineEdit->setText("-");
+        return;
+    }
+
+    // 防止重複輸入符號 (例如 5++3)
+    // 如果最後一個字已經是符號，就替換掉它
+    if (!currentText.isEmpty()) {
+        QChar lastChar = currentText.at(currentText.length() - 1);
+        QString operators = "+-X÷";
+        if (operators.contains(lastChar)) {
+            currentText.chop(1); // 砍掉最後一個重複的符號
+        }
+    }
+
+    // 轉換符號為引擎認識的標準算式
+    if (op == "X") op = "*";
+    if (op == "÷") op = "/";
+
+    ui->lineEdit->setText(currentText + op);
+}
+
+
+void CalculatorUI::on_equal_Button_clicked() {
+    QString formula = ui->lineEdit->text();
+    if (formula == "0" || formula.isEmpty()) return;
+
+    try {
+        std::string expression = formula.toStdString();
+        auto res = engine.execute(expression);
+
+        // 這裡要檢查你的引擎是否有 Success 狀態
+        // 假設你的引擎狀態叫 res.status，成功是 Success
+        if (res.status == Calculator::CalcStatus::Success ){
+            //語法:
+            //使用enum class的方法
+            //<ClassName>::<EmmuClassName>::<EmmuClassElement>
+            //因為Success是定義在CalcStatus之中,又是在Calculator之中,所以使用的方式為:
+            //Calculator::CalcStatus::Success
+
+            ui->label->setText(formula + " =");
+            ui->lineEdit->setText(QString::number(res.value));
+        } else {
+            // 引擎告訴你算式有問題 (例如括號沒對齊)
+            ui->label->setText("Error: " + QString::fromStdString(engine.statusToText(res.status)));
+        }
+
+    } catch (...) {
+        ui->label->setText("System Error!");
+    }
+}
+
+// 1. 正負號 (±) - 最簡單的字串反轉
+void CalculatorUI::on_Negate_Button_clicked() {
+    QString text = ui->lineEdit->text();
+    if (text == "0" || text.isEmpty()) return;
+
+    // 如果開頭有負號就去掉，沒負號就加上去
+    if (text.startsWith("-")) {
+        text.remove(0, 1);
+    } else {
+        text.prepend("-");
+    }
+    ui->lineEdit->setText(text);
+}
+
+// 2. 開根號 (√) - 轉換為引擎認識的 sqrt( )
+void CalculatorUI::on_square_root_Button_clicked() {
+    QString text = ui->lineEdit->text();
+
+    // 如果目前是 0，直接變成 sqrt(
+    if (text == "0") {
+        ui->lineEdit->setText("sqrt(");
+    } else {
+        // 如果前面已經有數字，通常是乘上根號或是直接追加
+        ui->lineEdit->setText(text + "sqrt(");
+    }
+}
+
+// 3. 平方 (x²) - 轉換為引擎認識的 ^2
+void CalculatorUI::on_square_Button_clicked() {
+    QString text = ui->lineEdit->text();
+    if (text == "0") return;
+
+    // 在當前算式後面加上平方符號
+    ui->lineEdit->setText(text + "^2");
+}
+
+void CalculatorUI::on_Percentage_Button_clicked() {
+    QString text = ui->lineEdit->text();
+
+    // 如果是 0，按百分比沒意義，直接無視
+    if (text == "0" || text.isEmpty()) return;
+
+    // 檢查最後一個字元，防止連續出現 5/100/100 (除非你真的想這樣算)
+    if (text.endsWith("/100")) return;
+
+    // 直接在現有的算式後面加上 /100
+    // 這樣當你輸入 50 然後按 %，螢幕顯示 50/100，按下 = 就會得到 0.5
+    ui->lineEdit->setText(text + "/100");
+}
+
+void CalculatorUI::on_Shift_Button_clicked() {
+    isShifted = !isShifted; // 切換狀態
+
+    if (isShifted) {
+        ui->Fun_sin_Button->setText("asin(");
+        ui->Fun_Cos_Button->setText("acos(");
+        ui->fun_Tan_Button->setText("atan(");
+        ui->Power_of_Button->setText("y√x"); // 開 Y 次根號
+        ui->Fun_exp_Button->setText("ln(x)"); //<<新增的
+        ui->Shift_Button->setStyleSheet("background-color: #ffaa00; color: white;"); // 變色提醒
+    } else {
+        ui->Fun_sin_Button->setText("sin(");
+        ui->Fun_Cos_Button->setText("cos(");
+        ui->fun_Tan_Button->setText("tan(");
+        ui->Power_of_Button->setText("x^y");
+        ui->Fun_exp_Button->setText("exp(x)");
+        //ui->Shift_Button->setStyleSheet(""); // 恢復原色
+        ui->Shift_Button->setStyleSheet("background-color: #fbfbfb; color: #555555; font-weight: normal;");
     }
 
 
-
-    // --- 2. 螢幕 (QLineEdit) 初始化 ---
-    ui->lineEdit->setAlignment(Qt::AlignRight); // 文字靠右
-    ui->lineEdit->setReadOnly(true);            // 唯讀，禁止鍵盤輸入
-    ui->lineEdit->setText("0");                 // 預設顯示 0
-    ui->label->setText("");                     // 上方紀錄標籤先清空
-
-    // --- 3. 擴充面板初始狀態 ---
-    ui->scientific_panel->hide();               // 啟動時隱藏左側面板
-
-    // --- 4. 單元/模式初始狀態 ---
-    ui->BIN->setChecked(true);                  // 預設選中 DEG (對應你 UI 上的第一個 Radio)
-    // 這裡記得同步你的引擎單位
-    // engine.trig.setUnit(TrigEngine::AngleUnit::Degree);
-
-    // --- 5. 其他 UI 微調 ---
-    // 如果你有兩個空按鍵，可以先禁用它們
-    ui->pushButton_11->setEnabled(false);
-    ui->pushButton_12->setEnabled(false);
 }
+void CalculatorUI::onScientificClicked() {
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    if (!button) return;
+
+    QString currentText = ui->lineEdit->text();
+    QString func = button->text();
+
+    // 屎山修正：如果現在是 0，先清空再加函數
+    if (currentText == "0") currentText = "";
+
+    // 根據按鈕處理字串
+    if (func.contains("sin"))  ui->lineEdit->setText(currentText + (isShifted ? "asin(" : "sin("));
+    else if (func.contains("cos")) ui->lineEdit->setText(currentText + (isShifted ? "acos(" : "cos("));
+    else if (func.contains("tan")) ui->lineEdit->setText(currentText + (isShifted ? "atan(" : "tan("));
+    else if (func == "exp(x)")     ui->lineEdit->setText(currentText + "exp(");
+    else if (func == "ln(x)")      ui->lineEdit->setText(currentText + "ln(");
+    else if (func == "x^y")        ui->lineEdit->setText(currentText + "^");
+    else if (func == "Fib(x)")     ui->lineEdit->setText(currentText + "fib(");
+    else if (func == "Rem")        ui->lineEdit->setText(currentText + "rem(");
+
+    if (isShifted) {
+        on_Shift_Button_clicked(); // 直接呼叫該函數來執行切換回來的邏輯
+    }
+}
+
+void CalculatorUI::on_AngleUnit_toggled() {
+    // 1. 確保名稱與 UI 編輯器一致：DEG_Radiobuttom
+    // 2. 透過 engine 的 public 函數來設定，而不是直接碰 .trig
+
+    if (ui->DEG_Radiobuttom->isChecked()) {
+        engine.setAngleUnit(TrigEngine::AngleUnit::Degree);
+        ui->label->setText("DEG Mode");
+    }
+    else if (ui->RAD_Radiobuttom->isChecked()) {
+        engine.setAngleUnit(TrigEngine::AngleUnit::Radian);
+        ui->label->setText("RAD Mode");
+    }
+    else if (ui->GRA_Radiobuttom->isChecked()) {
+        engine.setAngleUnit(TrigEngine::AngleUnit::Gradian);
+        ui->label->setText("GRA Mode");
+    }
+}
+
+// Pi 是常數，單獨處理
+void CalculatorUI::on_PI_Button_clicked() {
+    QString currentText = ui->lineEdit->text();
+    if (currentText == "0") ui->lineEdit->setText("PI");
+    else ui->lineEdit->setText(currentText + "PI");
+}
+
+// 2. 常數 e (Expr(c))：噴出 "E"
+void CalculatorUI::on_expr_const_Button_clicked() {
+    QString currentText = ui->lineEdit->text();
+
+    // 如果目前是 0，直接變成 E
+    if (currentText == "0") {
+        ui->lineEdit->setText("expr");
+    } else {
+        // 追加常數 E
+        ui->lineEdit->setText(currentText + "expr");
+    }
+}
+
+
 
 CalculatorUI::~CalculatorUI()
 {
     delete ui;
 }
 
-
-/*
- * void Calculator::on_btn_Unit_clicked() {
-    // 1. 取得目前引擎的單位
-    auto current = trig.getUnit();
-
-    // 2. 依照順序切換並更新 UI
-    if (current == AngleUnit::Degree) {
-        trig.setUnit(AngleUnit::Radian);
-        ui->btn_Unit->setText("RAD"); // 按鍵文字直接變，使用者立刻知道換了
-    } else if (current == AngleUnit::Radian) {
-        // 如果你不想處理 GRAD，這一段可以跳過，直接切回 Degree
-        trig.setUnit(AngleUnit::Gradian);
-        ui->btn_Unit->setText("GRA");
-    } else {
-        trig.setUnit(AngleUnit::Degree);
-        ui->btn_Unit->setText("DEG");
-    }
-}
-*/
-
-/*
-void Calculator::updateScientificButtons(bool shifted) {
-    if (shifted) {
-        ui->btn_sin->setText("sin⁻¹");
-        ui->btn_pow->setText("ʸ√x");
-    } else {
-        ui->btn_sin->setText("sin");
-        ui->btn_pow->setText("xʸ");
-    }
-}
-
-*/
-
-
-void CalculatorUI::on_Menu_Button_clicked()
-{
-    ui->scientific_panel->setVisible(!ui->scientific_panel->isVisible());
-}
-/*
-void CalculatorUI::on_Menu_Button_clicked() {
-
-    if (ui->scientific_panel->isHidden()) {
-        ui->scientific_panel->show();
-    } else {
-        ui->scientific_panel->hide();
-    }
-
-    // 先確保 Layout 重新計算
-    ui->centralwidget->layout()->activate();
-
-    // 再執行調整，這時因為右邊有 minimumSize，視窗就不會縮成一團
-    this->adjustSize();
-}
-*/
-
-
-/*彈出動畫1
- *
-  #include <QPropertyAnimation>
-
-QPropertyAnimation *anim = new QPropertyAnimation(ui->scientific_panel, "geometry");
-anim->setDuration(250);   // 動畫時間 0.25 秒
-
-void Calculator::on_pushButton_4_clicked()
-{
-    QRect startRect;
-    QRect endRect;
-
-    int panelWidth = ui->scientific_panel->width();
-
-    if (!ui->scientific_panel->isVisible())
-    {
-        ui->scientific_panel->show();
-
-        startRect = QRect(-panelWidth, 180, panelWidth, 411);
-        endRect   = QRect(30, 180, panelWidth, 411);
-    }
-    else
-    {
-        startRect = QRect(30, 180, panelWidth, 411);
-        endRect   = QRect(-panelWidth, 180, panelWidth, 411);
-    }
-
-    QPropertyAnimation *anim = new QPropertyAnimation(ui->scientific_panel, "geometry");
-    anim->setDuration(250);
-    anim->setStartValue(startRect);
-    anim->setEndValue(endRect);
-    anim->start();
-
-    connect(anim, &QPropertyAnimation::finished, this, [=]() {
-        if (endRect.x() < 0)
-            ui->scientific_panel->hide();
-    });
-}
-*/
-
-
-/*
- *
- * 彈出動畫2
-// 這需要 #include <QPropertyAnimation>
-void Calculator::on_Menu_Button_clicked() {
-    int targetWidth = ui->scientific_panel->width() > 0 ? 0 : 150;
-
-    // 建立一個動畫，改變左側面板的最小寬度
-    QPropertyAnimation *animation = new QPropertyAnimation(ui->scientific_panel, "minimumWidth");
-    animation->setDuration(200); // 0.2 秒
-    animation->setStartValue(ui->scientific_panel->width());
-    animation->setEndValue(targetWidth);
-    animation->start(QAbstractAnimation::DeleteWhenStopped);
-
-    // 注意：這種做法要把左邊面板的超出部分切掉 (setClipsCharacters)
-}
-
-
-*/
