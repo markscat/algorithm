@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "../include/algorithm.h" // 引用你的核心引擎
+#include "../include/Constants.h"
 //calculator.h:: Included header algorithm.h is not used directly (fix available)
 
 

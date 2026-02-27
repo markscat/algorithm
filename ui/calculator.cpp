@@ -2,6 +2,7 @@
 #include "./ui_calculator.h"
 #include "../include/algorithm.h"
 
+#include "../include/Constants.h"
 #include <QKeyEvent>
 #include <string>
 
@@ -468,12 +469,40 @@ void CalculatorUI::onScientificClicked() {
     if (!button) return;
 
     QString currentText = ui->lineEdit->text();
-    QString func = button->text();
 
-    // 屎山修正：如果現在是 0，先清空再加函數
+#define use_string_func
+
+#ifdef use_string_func
+    QString func = button->text();
+    qDebug() << "當前按鈕的文字是:" << func;
+
+#endif
+    // 如果現在是 0，先清空再加函數
     if (currentText == "0") currentText = "";
 
     // 根據按鈕處理字串
+
+#ifdef use_Buttom_obj
+    if (button == ui->Fun_sin_Button) {
+        ui->lineEdit->setText(currentText + (isShifted ? "asin(" : "sin("));
+    }
+    else if (button == ui->Fun_Cos_Button) {
+        ui->lineEdit->setText(currentText + (isShifted ? "acos(" : "cos("));
+    }
+    else if (button == ui->fun_Tan_Button) {
+        ui->lineEdit->setText(currentText + (isShifted ? "atan(" : "tan("));
+    }
+    else if (button == ui->Fun_exp_Button) {
+        // 這裡解決 exp(x) 沒反應的問題
+        ui->lineEdit->setText(currentText + (isShifted ? "ln(" : "exp("));
+    }
+    else if (button == ui->Power_of_Button) {
+        ui->lineEdit->setText(currentText + (isShifted ? "yroot(" : "^"));
+    }
+#endif
+
+#ifdef use_string_func
+
     if (func.contains("sin"))  ui->lineEdit->setText(currentText + (isShifted ? "asin(" : "sin("));
     else if (func.contains("cos")) ui->lineEdit->setText(currentText + (isShifted ? "acos(" : "cos("));
     else if (func.contains("tan")) ui->lineEdit->setText(currentText + (isShifted ? "atan(" : "tan("));
@@ -481,7 +510,8 @@ void CalculatorUI::onScientificClicked() {
     else if (func == "ln(x)")      ui->lineEdit->setText(currentText + "ln(");
     else if (func == "x^y")        ui->lineEdit->setText(currentText + "^");
     else if (func == "Fib(x)")     ui->lineEdit->setText(currentText + "fib(");
-    else if (func == "Rem")        ui->lineEdit->setText(currentText + "rem(");
+    else if (func == "Rem")        ui->lineEdit->setText(currentText + " % ");
+#endif
 
     if (isShifted) {
         on_Shift_Button_clicked(); // 直接呼叫該函數來執行切換回來的邏輯
@@ -519,10 +549,10 @@ void CalculatorUI::on_expr_const_Button_clicked() {
 
     // 如果目前是 0，直接變成 E
     if (currentText == "0") {
-        ui->lineEdit->setText("expr");
+        ui->lineEdit->setText("Expr");
     } else {
         // 追加常數 E
-        ui->lineEdit->setText(currentText + "expr");
+        ui->lineEdit->setText(currentText + "Expr");
     }
 }
 
