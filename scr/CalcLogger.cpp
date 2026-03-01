@@ -25,6 +25,47 @@ std::string CalcLogger::generateTimestampFilename() {
     return ss.str();
 }
 
+// --- 這是新增的函式，邏輯一樣，但檔名由外部決定 ---
+void CalcLogger::writeLog(const std::string& filename,
+                          const std::string& expr,
+                          const std::vector<Calculator::Token>& postfix,
+                          const Calculator::CalcResult& res)
+{
+    if (filename.empty()) return;
+
+    // 使用傳入的檔名，並用 ios::app 確保是「附加」文字而不是覆蓋
+    std::ofstream fout(filename, std::ios::app);
+    if (!fout.is_open()) return;
+
+    // (這裡的寫入內容邏輯，直接從你原本的函式複製過來即可)
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    struct tm timeinfo;
+#ifdef _WIN32
+    localtime_s(&timeinfo, &now);
+#else
+    localtime_r(&now, &timeinfo);
+#endif
+
+    std::stringstream ssPostfix;
+    for (const auto& t : postfix) {
+        if (t.type == Calculator::TokenType::Number) ssPostfix << t.value << " ";
+        else if (!t.name.empty()) ssPostfix << t.name << " ";
+        else ssPostfix << t.symbol << " ";
+    }
+
+    fout << "Time    : " << std::put_time(&timeinfo, "%Y-%m-%d %H:%M:%S") << "\n";
+    fout << "Formula : " << expr << "\n";
+    fout << "RPN     : " << ssPostfix.str() << "\n";
+    if (res.status == Calculator::CalcStatus::Success) {
+        fout << "Result  : " << std::setprecision(15) << res.value << "\n";
+    } else {
+        fout << "Status  : ERROR (" << Calculator::statusToText(res.status) << ")\n";
+    }
+    fout << "------------------------------------------------\n";
+    fout.close();
+}
+
+
 void CalcLogger::writeLog(const std::string& expr,
     const std::vector<Calculator::Token>& postfix,
     const Calculator::CalcResult& res)

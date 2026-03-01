@@ -22,4 +22,11 @@ public:
     static void writeLog(const std::string& expr,
         const std::vector<Calculator::Token>& postfix,
         const Calculator::CalcResult& res);
+
+    // 新增的函式（專門給錄製功能使用，接收外部指定的檔名）
+    static void writeLog(const std::string& filename,
+                         const std::string& expr,
+                         const std::vector<Calculator::Token>& postfix,
+                         const Calculator::CalcResult& res);
+
 };

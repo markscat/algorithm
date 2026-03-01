@@ -5,6 +5,10 @@
 #include "../include/Constants.h"
 #include <QKeyEvent>
 #include <string>
+#include <QClipboard>
+#include <QGuiApplication>
+
+#include <QMessageBox>
 
 
 
@@ -114,7 +118,7 @@ CalculatorUI::CalculatorUI(QWidget *parent)
         unitLayout->addWidget(ui->DEG_Radiobuttom);
         unitLayout->addWidget(ui->RAD_Radiobuttom);
         unitLayout->addWidget(ui->GRA_Radiobuttom);
-        unitLayout->addWidget(ui->REC_Radiobuttom);
+        unitLayout->addWidget(ui->REC_Check);
         ui->widget->setLayout(unitLayout);
     }
     ui->widget->setFixedHeight(35); // 強制給它高度，不准消失
@@ -164,6 +168,22 @@ CalculatorUI::CalculatorUI(QWidget *parent)
 
     // 2. 「吸星大法」：強制讓主視窗拿到焦點
     this->setFocus();
+
+    // 在建構子連線
+    connect(ui->REC_Check, &QCheckBox::toggled, this, [this](bool isRecording) {
+        if (isRecording) {
+            // 呼叫你的錄製啟動功能
+            engine.startLogging();
+            ui->label->setText("REC ON");
+            ui->label->setStyleSheet("color: red;"); // 錄製時標籤變紅提醒
+        } else {
+            // 呼叫你的停止錄製功能
+            engine.stopLogging();
+            ui->label->setText("REC OFF");
+            ui->label->setStyleSheet(""); // 恢復原色
+        }
+    });
+
 
     //UI End
 
@@ -288,9 +308,64 @@ void CalculatorUI::on_Back_Button_clicked() {
     ui->lineEdit->setText(text);
 }
 
+// 左括號 (
+void CalculatorUI::on_LParen_Button_clicked() {
+    QString currentText = ui->lineEdit->text();
+
+    // 如果目前是 0，直接取代成 (；否則追加
+    if (currentText == "0") {
+        ui->lineEdit->setText("(");
+    } else {
+        ui->lineEdit->setText(currentText + "(");
+    }
+}
+
+// 右括號 )
+void CalculatorUI::on_RParen_Button_clicked() {
+    QString currentText = ui->lineEdit->text();
+
+    // 右括號通常不單獨存在，也不取代 0，直接追加即可
+    // 如果目前是 0，可以不做反應或變成 0)
+    if (currentText != "0") {
+        ui->lineEdit->setText(currentText + ")");
+    }
+}
+
+
+
 
 void CalculatorUI::keyPressEvent(QKeyEvent *event)
 {
+    // 檢查是否有按下 Control 鍵
+    if (event->modifiers() & Qt::ControlModifier) {
+
+        // --- 複製功能 (Ctrl + C) ---
+        if (event->key() == Qt::Key_C) {
+            QClipboard *clipboard = QGuiApplication::clipboard();
+            clipboard->setText(ui->lineEdit->text());
+            ui->label->setText("Copied to clipboard");
+            return; // 處理完就跳出
+        }
+
+        // --- 貼上功能 (Ctrl + V 或 Ctrl + P) ---
+        // 雖然標準是 V，但照你的要求加入 P
+        else if (event->key() == Qt::Key_V) {
+            QClipboard *clipboard = QGuiApplication::clipboard();
+            QString clipText = clipboard->text();
+
+            if (!clipText.isEmpty()) {
+                QString currentText = ui->lineEdit->text();
+                if (currentText == "0") {
+                    ui->lineEdit->setText(clipText);
+                } else {
+                    ui->lineEdit->setText(currentText + clipText);
+                }
+                ui->label->setText("Pasted from clipboard");
+            }
+            return;
+        }
+    }
+
     // 取得按下的按鍵代碼
     int key = event->key();
 
@@ -324,6 +399,16 @@ void CalculatorUI::keyPressEvent(QKeyEvent *event)
     // 5. 處理等於 (Enter 或 Return)
     else if (key == Qt::Key_Enter || key == Qt::Key_Return) {
         ui->equal_Button->animateClick();
+    }
+
+
+    // 處理左括號 ( 通常是 Shift + 9
+    if (event->text() == "(") {
+        ui->LParen_Button->animateClick();
+    }
+    // 處理右括號 ) 通常是 Shift + 0
+    else if (event->text() == ")") {
+        ui->RParen_Button->animateClick();
     }
 
     // 如果是其他沒處理的鍵，丟回給父類別處理，不要吃掉它
@@ -557,6 +642,45 @@ void CalculatorUI::on_expr_const_Button_clicked() {
 }
 
 
+void CalculatorUI::on_actionchinese_triggered(){
+    // 使用 QMessageBox 的靜態函數 about
+    QMessageBox::about(this,
+                       tr("關於本軟體"),
+                       tr("<h3>科學計算機 V1.0</h3>"
+                          "<p>版權所有 © 2026 Ethan Yang (Markscat)</p>"
+                          "<p>本程式提供 :<br/>"
+                          "1. 基本四則運算<br/>"
+                          "2. 三角函數計算<br/>"
+                          "3. 反三角函數計算<br/>"
+                          "4. 自然對數e和ln計算<br/>"
+                          "5. 百分率、餘數計算<br/>"
+
+                          "有興趣討論的話,請發郵件給我"
+                          "<a href='mailto:markscat@gmail.com'>markscat@gmail.com</a></p>"
+
+                          "<p>本程式為自由軟體；您可以根據自由軟體基金會所發佈的 "
+                          "GNU 通用公共許可證 (GNU General Public License) 條款，"
+                          "對其進行重新分發和/或修改；無論您使用的是許可證的第三版，"
+
+                          "<p>發佈此程式是希望它能發揮作用，但<b>不提供任何保證</b>；"
+                          "甚至不包含對<b>適銷性</b>或<b>特定用途適用性</b>的暗示性保證。"
+                          "詳情請參閱 GNU 通用公共許可證。</p>"
+                          "<p>請參閱 <a href='https://www.gnu.org/licenses/'>https://www.gnu.org/licenses/</a>。</p>"));
+
+}
+
+
+void CalculatorUI::on_actionEnglish_triggered(){
+    QMessageBox::about(this,tr("About This:"),
+     tr("Engineering Computer"
+        "<p>all rights reserved © 2026 Ethan Yang (Markscat)</p>"
+        "<p>eMail:<a href='mailto:markscat@gmail.com'>markscat@gmail.com</a></p>"
+        "<p>This program is released in the hope that it will work, but <b>no guarantees are made</b>;"
+        "not even including the implied warranties of <b>merchantability</b> or <b>fitness for a particular purpose</b>."
+        "For details, please refer to the GNU General Public License.</p>"
+         "<p><a href='https://www.gnu.org/licenses/'>https://www.gnu.org/licenses/</a>。</p>"
+                          ));
+}
 
 CalculatorUI::~CalculatorUI()
 {

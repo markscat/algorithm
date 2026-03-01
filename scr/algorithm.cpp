@@ -421,10 +421,18 @@ Calculator::CalcResult Calculator::execute(std::string expression) noexcept {
     // 3. 計算
     CalcResult res = evaluate(postfix);
 
+    // 修改這裡：
+    if (this->isLogging && !currentSessionFile.empty()) {
+        // 呼叫帶有 4 個參數的新版本 (filename, expr, postfix, res)
+        // 這樣它就會一直寫入 currentSessionFile 指向的那個檔案
+        CalcLogger::writeLog(this->currentSessionFile, expression, postfix, res);
+    }
+
+    /*
     // 如果正在錄製中，就持續「附加」到同一個檔案
     if (this->isLogging && !currentSessionFile.empty()) {
         CalcLogger::writeLog(expression, postfix, res);
-    }
+    }*/
     
     lastStatus = res.status;
     return res;

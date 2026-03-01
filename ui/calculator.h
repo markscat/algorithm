@@ -42,6 +42,8 @@ private slots:
     void on_square_root_Button_clicked();   //平方根
     void on_square_Button_clicked();        //平方
     void on_Percentage_Button_clicked();    //百分比
+    void on_LParen_Button_clicked();
+    void on_RParen_Button_clicked();
 
     // --- 科學運算符 ---
     void on_Shift_Button_clicked();   // 切換按鈕文字
@@ -53,6 +55,10 @@ private slots:
     // --- 角度單位切換 ---
     void on_AngleUnit_toggled();      // 處理 DEG, RAD, GRA
 
+    //----關於----
+    void on_actionchinese_triggered();
+    void on_actionEnglish_triggered();
+
 private:
     Ui::Calculator *ui;
 
@@ -61,6 +67,8 @@ private:
 
     // 這是 Qt 視窗內建的鍵盤監聽功能
     void keyPressEvent(QKeyEvent *event) override;
+
+
 
     bool isShifted = false; // 紀錄 Shift 是否按下了
 
