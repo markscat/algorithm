@@ -8,6 +8,11 @@
 4. 自然對數e和ln計算<br/>
 5. 百分率、餘數計算<br/>
 有興趣討論的話,請發郵件給我</p>
+
+檔名：V26.03.05-FirstRelease.rar<br/>
+這是可執行檔,可以解壓縮之後直接執行,不需要安裝。<br/>
+如果不相信我可以刪除之後用qt編譯<br/>
+
  <p><a href='mailto:markscat@gmail.com'>markscat@gmail.com</a></p>
  <p>本程式為自由軟體；您可以根據自由軟體基金會所發佈的 
    GNU 通用公共許可證 (GNU General Public License) 條款，
