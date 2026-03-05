@@ -199,7 +199,8 @@ CalculatorUI::CalculatorUI(QWidget *parent)
     for (QPushButton* btn : digitButtons) {
         if (btn) {
 
-            /*  connect(
+            /*  connect的用法
+             *  connect(
              *   const typename QtPrivate::FunctionPointer<Func1>::Object *sender,
              *   Func1 signal,
              *   const typename QtPrivate::ContextTypeForFunctor<Func2>::ContextType *context,
@@ -209,11 +210,6 @@ CalculatorUI::CalculatorUI(QWidget *parent)
             connect(btn, &QPushButton::clicked, this, &CalculatorUI::onDigitClicked);
         }
     }
-
-    // 手動連線退格與清除按鈕 (如果你沒在 UI 介面點右鍵連線的話)
-    //connect(ui->Back_Button, &QPushButton::clicked, this, &CalculatorUI::on_Back_Button_clicked);
-    //connect(ui->Clear_Button, &QPushButton::clicked, this, &CalculatorUI::on_Clear_Button_clicked);
-
 
     // --- 運算符連線 ---
     QList<QPushButton*> opButtons = {
