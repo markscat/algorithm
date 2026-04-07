@@ -30,6 +30,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         scr/algorithm.cpp scr/CalcLogger.cpp scr/Infinitesimalrechnung.cpp scr/Trigonometry.cpp
         ui/calculator.cpp ui/calculator.h ui/calculator.ui
         resource/resource.qrc
+        scr/CalcLogger.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET algorithm APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
