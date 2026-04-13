@@ -270,6 +270,9 @@ void CalculatorUI::onDigitClicked() {
     QString buttonText = button->text();
     QString currentText = ui->lineEdit->text();
 
+//#define Only_one_point
+
+#ifdef Only_one_point
     // 如果螢幕現在是 0，直接換成點擊的數字；除非點的是小數點
     if (currentText == "0") {
         if (buttonText == ".") {
@@ -282,6 +285,43 @@ void CalculatorUI::onDigitClicked() {
         if (buttonText == "." && currentText.contains(".")) return;
         ui->lineEdit->setText(currentText + buttonText);
     }
+#else
+    // --- 1. 如果按下的是「小數點」 ---
+    if (buttonText == ".") {
+        // 從字串最後面往回檢查
+        for (int i = currentText.length() - 1; i >= 0; --i) {
+            QChar c = currentText[i];
+
+            // 如果先遇到運算符號，表示目前的數字還沒有點，可以放心的點下去，直接跳出迴圈
+            if (c == '+' || c == '-' || c == '*' || c == '/') {
+                break;
+            }
+
+            // 如果先遇到了點，代表這段數字已經有小數點了，直接結束這整個 function
+            if (c == '.') {
+                return;
+            }
+        }
+
+        // 特殊處理：如果點之前是空的，或者點之前是符號，自動補個 0 (變成 "0.")
+        if (currentText.isEmpty() ||
+            currentText.endsWith('+') || currentText.endsWith('-') ||
+            currentText.endsWith('*') || currentText.endsWith('/')) {
+            ui->lineEdit->setText(currentText + "0.");
+            return;
+        }
+    }
+
+    // --- 2. 處理數字的輸入 ---
+    // 如果目前螢幕只有一個 "0"，且現在按的是數字，就直接取代掉那個 0
+    if (currentText == "0" && buttonText != ".") {
+        ui->lineEdit->setText(buttonText);
+    } else {
+        // 其他情況：直接把按下的按鈕（數字或點）接在後面
+        ui->lineEdit->setText(currentText + buttonText);
+    }
+
+#endif
 }
 
 // 清除鍵：直接回歸原始
