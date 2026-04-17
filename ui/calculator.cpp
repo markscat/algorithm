@@ -488,6 +488,29 @@ void CalculatorUI::on_equal_Button_clicked() {
     QString formula = ui->lineEdit->text();
     if (formula == "0" || formula.isEmpty()) return;
 
+
+    // --- 容錯修復邏輯 ---
+    // 1. 如果結尾是運算符號 (+, -, *, /)，自動刪除
+    // 使用 while 處理連續多個符號的情況 (例如 2++ )
+    while (!formula.isEmpty() && (formula.endsWith('+') || formula.endsWith('-') ||
+                                  formula.endsWith('*') || formula.endsWith('/'))) {
+        formula.chop(1);
+    }
+
+
+
+    // 2. 如果結尾是點 (.)，補上 0 (例如 2. 變 2.0)
+    if (formula.endsWith('.')) {
+        formula.append('0');
+    }
+
+    // 如果清洗完後變空了（例如原本只打了一個 +），回歸初始狀態
+    if (formula.isEmpty()) {
+        ui->lineEdit->setText("0");
+        return;
+    }
+    // ----------------------
+
     try {
         std::string expression = formula.toStdString();
         auto res = engine.execute(expression);
